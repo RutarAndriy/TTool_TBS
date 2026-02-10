@@ -150,11 +150,13 @@ for (String file : procFiles) {
 
 try { 
 
+allData.clear();                                           // очищуємо всі дані
+
 // Зчитування вмісту всіх файлів
 for (String file : procFiles) {
 
-langData.clear();                                                  // очищуємо дані
-Utils.parseJson("", MAPPER.readTree(new File(file)), langData);     // парсимо файл
+langData.clear();                                              // очищуємо дані
+Utils.parseJson("", MAPPER.readTree(new File(file)), langData); // парсимо файл
 
 // Якщо даних ще немає - додаємо перші дані
 if (allData.isEmpty())
