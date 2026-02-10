@@ -214,6 +214,7 @@ private void cleanReplace()
 private void updateAllComponentsState() {
 
 boolean hasEditableCell = false;
+boolean canReplace = !cb_ignore_case.isSelected();
 
 for (int[] cell : findArray) {
     if (table.isCellEditable(cell[0], cell[1]))
@@ -224,16 +225,19 @@ for (int[] cell : findArray) {
 btn_next     .setEnabled(!findArray.isEmpty());
 btn_prev     .setEnabled(!findArray.isEmpty());
 
-btn_repl_all .setEnabled(!findArray.isEmpty() && cb_replace.isSelected() &&
-                          hasEditableCell);
+cb_replace.setEnabled(canReplace);
 
-btn_repl_this.setEnabled(!findArray.isEmpty() && cb_replace.isSelected() &&
-                          table.isCellEditable(findArray.get(findIndex)[0],
-                                               findArray.get(findIndex)[1]));
+btn_repl_all .setEnabled(canReplace && !findArray.isEmpty() &&
+                         cb_replace.isSelected() && hasEditableCell);
+btn_repl_this.setEnabled(canReplace &&
+                        !findArray.isEmpty() && cb_replace.isSelected() &&
+                         table.isCellEditable(findArray.get(findIndex)[0],
+                                              findArray.get(findIndex)[1]));
 
-fld_repl_text .setEnabled(cb_replace.isSelected() && !findArray.isEmpty());
-btn_clean_repl.setEnabled(cb_replace.isSelected() && !findArray.isEmpty());
-
+fld_repl_text .setEnabled(canReplace && cb_replace.isSelected() &&
+                                       !findArray.isEmpty());
+btn_clean_repl.setEnabled(canReplace && cb_replace.isSelected() &&
+                                       !findArray.isEmpty());
 }
 
 // ============================================================================
@@ -271,7 +275,6 @@ btn_clean_repl.setEnabled(cb_replace.isSelected() && !findArray.isEmpty());
             }
         });
 
-        cb_ignore_case.setSelected(true);
         cb_ignore_case.setText("Пошук без врахуванням регістру");
         cb_ignore_case.setActionCommand("cbIgnoreCase");
         cb_ignore_case.addActionListener(new ActionListener() {
@@ -497,7 +500,8 @@ btn_clean_repl.setEnabled(cb_replace.isSelected() && !findArray.isEmpty());
             
             case "cbIgnoreCase",
                  "cbEditableOnly" ->
-                { if (!text.equals(textFind)) { findText(); } }
+                { if (!text.equals(textFind)) { findText(); }
+                  else                        { updateAllComponentsState(); } }
         }
     }//GEN-LAST:event_onComponentAction
 
