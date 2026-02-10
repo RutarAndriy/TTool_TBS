@@ -43,6 +43,7 @@
                 </Property>
                 <Property name="text" type="java.lang.String" value="&#x41f;&#x43e;&#x448;&#x443;&#x43a;"/>
                 <Property name="actionCommand" type="java.lang.String" value="find"/>
+                <Property name="enabled" type="boolean" value="false"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="onMenuClick"/>

@@ -183,20 +183,11 @@ for (String key : allData.getFirst().keySet())
       for (LinkedHashMap<String, String> map : allData)
           { row.add(map.get(key)); }
         
-      tableModel.addRow(row.toArray(String[]::new)); } }
+      tableModel.addRow(row.toArray(String[]::new)); }
+      finalizeNewTable(); }
 
 catch (IOException ex) { JOptionPane.showMessageDialog(this,
                         "Помилка читання JSON: " + ex.getMessage()); }
-
-// ............................................................................
-
-tableModel.addTableModelListener((TableModelEvent e) -> {
-    dataWasChanged = true;
-    mni_save.setEnabled(true);
-});
-
-updateTableInfo();
-finalizeNewTable();
 
 }
 
@@ -369,7 +360,9 @@ for (int z = 1; z < tbl_main.getColumnCount(); z++) {
 
 updateTableInfo();
 
+mni_find.setEnabled(true);
 tableModel.addTableModelListener((TableModelEvent e) -> {
+    mni_save.setEnabled(true);
     dataWasChanged = true;
     updateAppTitle();
 });
@@ -381,17 +374,17 @@ tableModel.addTableModelListener((TableModelEvent e) -> {
 
 private void updateTableInfo() {
 
-String tmp;
-    
-tmp = lbl_rowCount.getText();
-tmp = tmp.substring(0, tmp.indexOf(":") + 1) + " "
-                  + tableModel.getRowCount();
-lbl_rowCount.setText(tmp);
+    String tmp;
 
-tmp = lbl_colCount.getText();
-tmp = tmp.substring(0, tmp.indexOf(":") + 1) + " "
-                  + tableModel.getColumnCount();
-lbl_colCount.setText(tmp);
+    tmp = lbl_rowCount.getText();
+    tmp = tmp.substring(0, tmp.indexOf(":") + 1) + " "
+                      + tableModel.getRowCount();
+    lbl_rowCount.setText(tmp);
+
+    tmp = lbl_colCount.getText();
+    tmp = tmp.substring(0, tmp.indexOf(":") + 1) + " "
+                      + tableModel.getColumnCount();
+    lbl_colCount.setText(tmp);
     
 }
 
@@ -515,6 +508,7 @@ private void initAppIcons() {
         mni_find.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK));
         mni_find.setText("Пошук");
         mni_find.setActionCommand("find");
+        mni_find.setEnabled(false);
         mni_find.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 onMenuClick(evt);
