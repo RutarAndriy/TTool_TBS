@@ -7,7 +7,7 @@
   <!-- Основні властивості -->
   <groupId>com.rutar</groupId>
   <artifactId>TTool_TBS</artifactId>
-  <version>2.1.0</version>
+  <version>2.2.0</version>
   <packaging>jar</packaging>
 
   <!-- Допоміжні властивості -->
