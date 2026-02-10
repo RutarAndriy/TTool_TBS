@@ -3,10 +3,8 @@ package com.rutar.ttool_tbs;
 import java.io.*;
 import java.awt.*;
 import java.net.*;
-import java.nio.*;
 import java.util.*;
 import javax.swing.*;
-import java.nio.file.*;
 import javax.imageio.*;
 import java.util.jar.*;
 import java.awt.event.*;
@@ -18,11 +16,12 @@ import com.formdev.flatlaf.*;
 import javax.swing.filechooser.*;
 import com.rutar.ua_translator.*;
 import com.formdev.flatlaf.themes.*;
+import com.fasterxml.jackson.databind.node.*;
 
-import static java.lang.System.*;
+import static java.io.File.*;
 import static javax.swing.JOptionPane.*;
 import static javax.swing.JFileChooser.*;
-import static java.awt.image.BufferedImage.*;
+import static com.rutar.ttool_tbs.Utils.*;
 
 // ............................................................................
 /// Головний клас програми
@@ -32,24 +31,26 @@ import static java.awt.image.BufferedImage.*;
 public class TToolTBS extends JFrame {
 
 private File inputFile;                                         // вхідний файл
-// private File outputFile;                                    // вихідний файл
+private File outputFile;                                       // вихідний файл
 
 private final JFileChooser fileOpen;           // відкривання/збереження файлів
-private final JFileChooser fntCompile;                  // компілювання шрифтів
-private final JFileChooser fntDecompile;              // декомпілювання шрифтів
-// private final JFileChooser rawCompile;                 // компілювання даних
-// private final JFileChooser rawDecompile;             // декомпілювання даних
 
 private String appDescription;                                 // опис програми
 private DefaultTableModel tableModel;              // стандартна модель таблиці
 
 private boolean dataWasChanged;                // якщо true - дані були змінені
+private String[] procFiles;
+
+// Сукупність усіх даних із файлу одної локалізації
+private final LinkedHashMap<String, String> langData =
+          new LinkedHashMap<>();
+
+// Сукупність усіх даних із файлів всіх оброблюваних локалізацій
+private final ArrayList<LinkedHashMap<String, String>> allData =
+          new ArrayList<>();
 
 // ............................................................................
 
-private File tmp;                                           // допоміжна змінна
-private byte[] allBytes;                                   // всі зчитані байти
-private ByteBuffer buffer;                        // буфер для зчитування даних
 private SearchDialog searchDialog;         // діалогове вікно пошуку інформації
 
 // Домашня директорія користувача
@@ -66,12 +67,8 @@ public TToolTBS() {
 initComponents();
 initAppIcons();
 
-fileOpen     = Utils.getFileChooser("test", FILES_ONLY,
-                                    "Особливий тип файлу");
-fntCompile   = Utils.getFileChooser("fnt", DIRECTORIES_ONLY,
-                                    "Особливі файли шрифтів");
-fntDecompile = Utils.getFileChooser("fnt", FILES_ONLY,
-                                    "Особливі файли шрифтів");
+fileOpen = Utils.getFileChooser("json", FILES_ONLY, "TBS файли локалізації");
+
 }
 
 // ============================================================================
@@ -128,40 +125,77 @@ if (answer != YES_OPTION) { return; }
 int result = fileOpen.showOpenDialog(this);
 if (result != JFileChooser.APPROVE_OPTION) { return; }
 
-openTestFile();
+openJsonFile();
 updateAppTitle();
 
 }
 
 // ============================================================================
-/// Відкривання *.test файлів
+/// Відкривання *.json файлів
 
-private void openTestFile() {
+private void openJsonFile() {
 
 prepareNewTable();
 
 // ............................................................................
+// Перевірка наявності усіх необхідних файлів
 
-try {
-
-ArrayList<String> newRow = new ArrayList<>();
-
-for (int z = 1; z <= 9; z++) {
-    
-    newRow.clear();
-    newRow.add(String.valueOf(z));
-    newRow.add("Key_"   + z);
-    newRow.add("Value_" + z);
-    tableModel.addRow(newRow.toArray(String[]::new));
-
-}
-}
-
-catch (Exception ex) { showMessageDialog(this, "Помилка читання файлу: " +
-                                                ex.getMessage()); }
+for (String file : procFiles) {
+    if (!new File(file).exists())
+        { JOptionPane.showMessageDialog(this, "Деякі файли відсутні:\n" + file,
+                                              "Помилка", ERROR_MESSAGE);
+          return; } }
 
 // ............................................................................
 
+try { 
+
+// Зчитування вмісту всіх файлів
+for (String file : procFiles) {
+
+langData.clear();                                                  // очищуємо дані
+Utils.parseJson("", MAPPER.readTree(new File(file)), langData);     // парсимо файл
+
+// Якщо даних ще немає - додаємо перші дані
+if (allData.isEmpty())
+    { allData.add((LinkedHashMap<String, String>) langData.clone()); }
+
+// Якщо дані вже є - перевіряємо чи збігаються ключі у файлах
+else if (!allData.getFirst().keySet().equals(langData.keySet()))
+    { showMessageDialog(this, "Не збігаються ключі у файлах!:\n" +
+                               procFiles[0] + "\n" + file,
+                              "Помилка", ERROR_MESSAGE);
+      return; }
+
+else { allData.add((LinkedHashMap<String, String>) langData.clone()); } }
+
+// ............................................................................
+// Записування даних у таблицю
+
+int index = 0;
+ArrayList<String> row = new ArrayList<>();
+    
+for (String key : allData.getFirst().keySet())
+    { row.clear();
+      row.add(String.valueOf(++index));
+      row.add(key);
+      
+      for (LinkedHashMap<String, String> map : allData)
+          { row.add(map.get(key)); }
+        
+      tableModel.addRow(row.toArray(String[]::new)); } }
+
+catch (IOException ex) { JOptionPane.showMessageDialog(this,
+                        "Помилка читання JSON: " + ex.getMessage()); }
+
+// ............................................................................
+
+tableModel.addTableModelListener((TableModelEvent e) -> {
+    dataWasChanged = true;
+    mni_save.setEnabled(true);
+});
+
+updateTableInfo();
 finalizeNewTable();
 
 }
@@ -175,20 +209,35 @@ fileOpen.setSelectedFile(inputFile);
 int result = fileOpen.showSaveDialog(this);
 if (result != JFileChooser.APPROVE_OPTION) { return; }
 
-saveTestFile();
+saveJsonFile();
 
 }
 
 // ============================================================================
-/// Збереження *.test файлів
+/// Збереження *.json файлів
 
-private void saveTestFile() {
+private void saveJsonFile() {
 
-// Utils.replaceUnusedChars("...");
+try {
 
 dataWasChanged = false;
-updateAppTitle();
+outputFile = fileOpen.getSelectedFile();
 
+ObjectNode newRoot = Utils.buildJsonFromTable(tbl_main);
+String pretty = MAPPER.writer(new CompactPrettyPrinter())
+                                 .writeValueAsString(newRoot);
+
+try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputFile),
+                                            StandardCharsets.UTF_8))
+    { writer.write(pretty); }
+
+updateAppTitle();
+showMessageDialog(this, "Файл " + outputFile.getName() + " успішно збережено",
+                        "Повідомлення", INFORMATION_MESSAGE); }
+
+catch (HeadlessException | IOException ex)
+    { showMessageDialog(this, "При збереженні файлу відбулася "
+                            + "критична помилка", "Помилка", ERROR_MESSAGE); }
 }
 
 // ============================================================================
@@ -267,96 +316,18 @@ if (answer == YES_OPTION) { System.exit(0); }
 }
 
 // ============================================================================
-/// Вибір шрифту для розпакування
-
-private void showDecompileFontDialog() {
-
-int result = fntDecompile.showOpenDialog(this);
-if (result != JFileChooser.APPROVE_OPTION) { return; }
-
-inputFile = fntDecompile.getSelectedFile();
-
-try { allBytes = Files.readAllBytes(inputFile.toPath()); }
-
-catch (IOException e) { out.println("Помилка розпаковування шрифту: "
-                                   + e.getMessage());
-                        return; }
-
-// ............................................................................
-
-byte[] data;
-buffer = ByteBuffer.wrap(allBytes);
-buffer.order(ByteOrder.LITTLE_ENDIAN);
-
-// ...
-if (debug) { out.println("..."); }
-
-int color;
-int width = 25;
-int height = 25;
-File imgFile = new File(HOME_DIR.getPath() + "/imgTest.bmp");
-BufferedImage image = new BufferedImage(width, height, TYPE_3BYTE_BGR);
-
-for (int r = 0; r < height; r++) {
-for (int c = 0; c < width; c++) {
-    color = 0x0000FF;
-    image.setRGB(c, r, color);
-}
-}
-
-try { ImageIO.write(image, "bmp", imgFile);
-      if (debug) { out.println("File imgTest.bmp was written"); } }
-
-catch (IOException e)
-    { if (debug) { err.println("File imgTest.bmp error"); } }
-
-// ............................................................................
-
-showMessageDialog(this, "Шрифт успішно розібрано!");
-
-}
-
-// ============================================================================
-/// Вибір розпакованого шрифту для пакування
-
-private void showCompileFontDialog() {
-
-tmp = Utils.getLastDir(fntDecompile);
-if (tmp != null) { fntCompile.setCurrentDirectory(tmp); }
-
-int result = fntCompile.showOpenDialog(this);
-if (result != JFileChooser.APPROVE_OPTION) { return; }
-
-inputFile = fntCompile.getSelectedFile();
-
-// ...
-
-showMessageDialog(this, "Шрифт успішно зібрано!");
-
-}
-
-// ============================================================================
-/// Вибір даних для розпакування
-
-private void showDecompileRawDialog() {}
-
-// ============================================================================
-/// Вибір розпакованих даних для пакування
-
-private void showCompileRawDialog() {}
-
-// ============================================================================
 /// Попередня ініціалізація нової таблиці
 
 private void prepareNewTable() {
 
 dataWasChanged = false;
+mni_save.setEnabled(false);
 inputFile = fileOpen.getSelectedFile();
 sp_table.getVerticalScrollBar().setValue(0);
 
 tableModel = new DefaultTableModel() {
     @Override
-    public boolean isCellEditable (int row, int column) { return column >= 2; }
+    public boolean isCellEditable (int row, int column) { return column == 2; }
 };
 
 tbl_main.setModel(tableModel);
@@ -364,6 +335,13 @@ tbl_main.setModel(tableModel);
 tableModel.addColumn("№");
 tableModel.addColumn("Ключ");
 tableModel.addColumn("Значення");
+
+procFiles = Utils.getProcFiles(inputFile);
+String tmp;
+for (int z = 1; z < procFiles.length; z++)
+    { tmp = procFiles[z].substring(procFiles[z].lastIndexOf("locale") + 7);
+      tmp = tmp.substring(0, tmp.indexOf(separator) - 1);
+      tableModel.addColumn(tmp.toUpperCase()); }
 
 }
 
@@ -475,9 +453,6 @@ private void initAppIcons() {
         mn_edit = new JMenu();
         mni_fntDecompile = new JMenuItem();
         mni_fntCompile = new JMenuItem();
-        sep_three = new JPopupMenu.Separator();
-        mni_rawDecompile = new JMenuItem();
-        mni_rawCompile = new JMenuItem();
         mn_info = new JMenu();
         mni_about = new JMenuItem();
 
@@ -564,6 +539,7 @@ private void initAppIcons() {
 
         mni_fntDecompile.setText("Розпакувати шрифт");
         mni_fntDecompile.setActionCommand("decompileFont");
+        mni_fntDecompile.setEnabled(false);
         mni_fntDecompile.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 onMenuClick(evt);
@@ -580,27 +556,6 @@ private void initAppIcons() {
             }
         });
         mn_edit.add(mni_fntCompile);
-        mn_edit.add(sep_three);
-
-        mni_rawDecompile.setText("Розпакувати дані");
-        mni_rawDecompile.setActionCommand("decompileRaw");
-        mni_rawDecompile.setEnabled(false);
-        mni_rawDecompile.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                onMenuClick(evt);
-            }
-        });
-        mn_edit.add(mni_rawDecompile);
-
-        mni_rawCompile.setText("Запакувати дані");
-        mni_rawCompile.setActionCommand("compileRaw");
-        mni_rawCompile.setEnabled(false);
-        mni_rawCompile.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                onMenuClick(evt);
-            }
-        });
-        mn_edit.add(mni_rawCompile);
 
         mnb_main.add(mn_edit);
 
@@ -656,11 +611,6 @@ private void initAppIcons() {
         case "exit" -> showExitDialog();
         case "info" -> showInfoDialog();
 
-        case "decompileFont" -> showDecompileFontDialog();
-        case "compileFont"   -> showCompileFontDialog();
-        case "decompileRaw"  -> showDecompileRawDialog();
-        case "compileRaw"    -> showCompileRawDialog();
-
     }   
     }//GEN-LAST:event_onMenuClick
 
@@ -687,13 +637,10 @@ private void initAppIcons() {
     private JMenuItem mni_fntCompile;
     private JMenuItem mni_fntDecompile;
     private JMenuItem mni_open;
-    private JMenuItem mni_rawCompile;
-    private JMenuItem mni_rawDecompile;
     private JMenuItem mni_save;
     private JPanel pnl_footer;
     private JPopupMenu.Separator sep_one;
     private JPopupMenu.Separator sep_two;
-    private JPopupMenu.Separator sep_three;
     private JScrollPane sp_table;
     public JTable tbl_main;
     // End of variables declaration//GEN-END:variables

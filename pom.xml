@@ -7,7 +7,7 @@
   <!-- Основні властивості -->
   <groupId>com.rutar</groupId>
   <artifactId>TTool_TBS</artifactId>
-  <version>0.0.1</version>
+  <version>2.1.0</version>
   <packaging>jar</packaging>
 
   <!-- Допоміжні властивості -->
@@ -96,11 +96,11 @@
       <artifactId>flatlaf</artifactId>
       <version>3.6</version>
     </dependency>
-    <!-- Бібліотека для розпаковування/запаковування даних -->
+    <!-- Бібліотека для роботи з json -->
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-compress</artifactId>
-      <version>1.28.0</version>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.17.0</version>
     </dependency>
     <!-- Бібліотека для локалізації стандартних swing-компонентів -->
     <dependency>
