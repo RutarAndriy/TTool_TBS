@@ -197,9 +197,7 @@ public static File getLastDir (JFileChooser chooser) {
 
 public static String replaceUnusedChars (String value) {
     
-    return value.replace('’', '\'')
-                .replace('Ґ', 'Г')
-                .replace('ґ', 'г');
+    return value.replace('’', '\'');
 }
 
 // Кінець класу Utils =========================================================
