@@ -354,8 +354,9 @@ tColumn.setPreferredWidth(45);
 tColumn.setResizable(false);
 
 for (int z = 1; z < tbl_main.getColumnCount(); z++) {
-    tbl_main.getColumnModel().getColumn(z).setCellRenderer(new CellRender());
-    tbl_main.getColumnModel().getColumn(z).setPreferredWidth(175);    
+    tColumn = tbl_main.getColumnModel().getColumn(z);
+    tColumn.setCellRenderer(new CellRender());
+    tColumn.setPreferredWidth(175);    
 }
 
 // ............................................................................
