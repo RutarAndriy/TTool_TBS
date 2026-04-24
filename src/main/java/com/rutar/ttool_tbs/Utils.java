@@ -38,30 +38,27 @@ public static void parseJson (String parent, JsonNode node,
 // Обробка об'єктів
 
 if (node.isObject()) {
-    Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-    int cycles = 0;
-    while (fields.hasNext()) {
-        Map.Entry<String, JsonNode> entry = fields.next();
-        String key = parent.isEmpty() ? entry.getKey() :
-                                        parent + ARROW + entry.getKey();
-        parseJson(key, entry.getValue(), data);
-        cycles++;
-    }
-    if (cycles == 0) { 
-        TextNode textNode = JsonNodeFactory.instance.textNode(EMPTY_OBJECT);
-        parseJson(parent, textNode, data); }
-}
+  Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+  int cycles = 0;
+  while (fields.hasNext()) {
+    Map.Entry<String, JsonNode> entry = fields.next();
+    String key = parent.isEmpty() ? entry.getKey() :
+                                    parent + ARROW + entry.getKey();
+    parseJson(key, entry.getValue(), data);
+    cycles++;
+  }
+  if (cycles == 0)
+    { TextNode textNode = JsonNodeFactory.instance.textNode(EMPTY_OBJECT);
+      parseJson(parent, textNode, data); } }
 
 // ............................................................................
 // Обробка масивів
 
 else if (node.isArray()) {
-    int index = 0;
-    for (JsonNode element : node) {
-        parseJson(parent + "[" + index + "]", element, data);
-        index++;
-    }
-}
+  int index = 0;
+  for (JsonNode element : node)
+    { parseJson(parent + "[" + index + "]", element, data);
+      index++; } }
 // ............................................................................
 // Обробка елементів
 
@@ -79,10 +76,10 @@ public static ObjectNode buildJsonFromTable (JTable table) {
     ObjectNode root = MAPPER.createObjectNode();
 
     for (int i = 0; i < table.getRowCount(); i++)
-        { String key = table.getValueAt(i, 1).toString();
-          String value = table.getValueAt(i, 2).toString();
-          value = replaceUnusedChars(value);
-          addValueToNode(root, key, value); }
+      { String key = table.getValueAt(i, 1).toString();
+        String value = table.getValueAt(i, 2).toString();
+        value = replaceUnusedChars(value);
+        addValueToNode(root, key, value); }
 
     return root;
 }
@@ -97,21 +94,21 @@ int dot = path.indexOf(ARROW);
 
 // Обробка вкладених структур
 if (dot >= 0)
-    { String head = path.substring(0, dot);
-      String rest = path.substring(dot + 1);
-      JsonNode child = node.get(head);
-      if (child == null || !child.isObject())
-          { child = MAPPER.createObjectNode();
-            node.set(head, child); }
-      addValueToNode((ObjectNode) child, rest, value); }
+  { String head = path.substring(0, dot);
+    String rest = path.substring(dot + 1);
+    JsonNode child = node.get(head);
+    if (child == null || !child.isObject())
+      { child = MAPPER.createObjectNode();
+        node.set(head, child); }
+    addValueToNode((ObjectNode) child, rest, value); }
 
 // Обробка масивів
 else if (path.matches(".+\\[\\d+\\]$"))
-    { String base = path.replaceAll("\\[\\d+\\]$", "");
-      ArrayNode array = node.has(base) && node.get(base).isArray() ?
-                       (ArrayNode) node.get(base) : MAPPER.createArrayNode();
-      node.set(base, array);
-      array.add(value); }
+  { String base = path.replaceAll("\\[\\d+\\]$", "");
+    ArrayNode array = node.has(base) && node.get(base).isArray() ?
+                     (ArrayNode) node.get(base) : MAPPER.createArrayNode();
+    node.set(base, array);
+    array.add(value); }
 
 // Обробка звичайних об'єктів
 else { if (value.equals(EMPTY_OBJECT)) { node.putObject(path);  }
@@ -132,7 +129,6 @@ public static void selectCell (JTable table, int col, int row) {
 
     Rectangle rect = table.getCellRect(row, col, true);
     table.scrollRectToVisible(rect);
-
 }
 
 // ============================================================================
@@ -154,13 +150,12 @@ public static String[] getProcFiles (File currentFile) {
     if (localeIndex == -1) { return result.toArray(String[]::new); }
 
     for (File file : new File(localePath).listFiles()) {
-        if (file.isDirectory() && file.getName().contains("^"))
-            { result.add(path.replace(separator + lang + separator,
-                                      separator + file.getName() +
-                                      separator)); } }
+      if (file.isDirectory() && file.getName().contains("^"))
+        { result.add(path.replace(separator + lang + separator,
+                                  separator + file.getName() +
+                                  separator)); } }
 
     return result.toArray(String[]::new);
-
 }
 
 // ============================================================================
@@ -183,7 +178,6 @@ public static JFileChooser getFileChooser (String ext, int selectionMode,
     chooser.setCurrentDirectory(HOME_DIR);
     
     return chooser;
-
 }
 
 // ============================================================================
@@ -197,14 +191,13 @@ public static File getLastDir (JFileChooser chooser) {
     
     // Якщо останього файлу немає - повертаємо null
     if (file == null)
-        { return null; }
+      { return null; }
     // Якщо останній файл є папкою - повертаємо батьківську папку
     else if (file.isDirectory())
-        { return new File(file.getParent()); }
+      { return new File(file.getParent()); }
     // Якщо останній файл є файлом - повертаємо шлях до його папки
     else
-        { return new File(file.getPath().replace(file.getName(), "")); }
-
+      { return new File(file.getPath().replace(file.getName(), "")); }
 }
 
 // ============================================================================
@@ -212,10 +205,8 @@ public static File getLastDir (JFileChooser chooser) {
 /// @param value текст із невикористовуваними символами
 /// @return текст із заміненими символами
 
-public static String replaceUnusedChars (String value) {
-    
-    return value.replace('’', '\'');
-}
+public static String replaceUnusedChars (String value)
+  { return value.replace('’', '\''); }
 
 // Кінець класу Utils =========================================================
 

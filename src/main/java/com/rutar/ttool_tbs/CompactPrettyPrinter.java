@@ -30,7 +30,7 @@ this.indentArraysWith(INDENTER);
 
 @Override
 public void writeObjectFieldValueSeparator (JsonGenerator g) throws IOException
-    { g.writeRaw(": "); }
+  { g.writeRaw(": "); }
 
 // ============================================================================
 // Перевизначення writeEndObject, щоб у випадку порожнього об'єкта
@@ -40,22 +40,20 @@ public void writeObjectFieldValueSeparator (JsonGenerator g) throws IOException
 public void writeEndObject (JsonGenerator g,
                             int nrOfEntries) throws IOException {
     
-if (!_objectIndenter.isInline()) {
-    // Зменшення рівня вкладення (так, як робить DefaultPrettyPrinter)
-    --_nesting;
+    if (!_objectIndenter.isInline()) {
+      // Зменшення рівня вкладення (так, як робить DefaultPrettyPrinter)
+      --_nesting;
 
-    _objectIndenter.writeIndentation(g, _nesting);
-}
-g.writeRaw("}");
-
+      _objectIndenter.writeIndentation(g, _nesting);
+    }
+    g.writeRaw("}");
 }
 
 // ============================================================================
 
 @Override
-public DefaultPrettyPrinter createInstance() {
-    return new CompactPrettyPrinter();
-}
+public DefaultPrettyPrinter createInstance()
+  { return new CompactPrettyPrinter(); }
 
 // Кінець класу CompactPrettyPrinter ==========================================
 
